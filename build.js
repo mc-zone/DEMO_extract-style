@@ -1,9 +1,11 @@
 const path = require("path");
 const webpack = require("webpack");
 const HTMLWebpackPlugin = require("html-webpack-plugin");
+const ExtractTextPlugin = require("extract-text-webpack-plugin");
+
+const mode = process.argv[2] || "production";
 
 webpack({
-  entry:"./index.js",
   output:{
     pathinfo:true,
   },
@@ -11,21 +13,31 @@ webpack({
     rules:[
       {
         test:/\.js$/,
+        include:[path.resolve(__dirname, "./src")],
+        enforce:"pre",
         use:[
           {
-            loader:path.resolve(__dirname, "./loader.js"),
+            loader:path.resolve(__dirname, "./generate-loader.js"),
           },
           {
             loader:"babel-loader",
             options:{
-              presets:[["@babel/preset-env"], "@babel/preset-react"]
+              presets:[
+                [
+                  "@babel/preset-env", {
+                    modules:false,
+                  }
+                ],
+                "@babel/preset-react"
+              ]
             }
           }
         ]
-      }
+      },
     ]
   },
-  mode:"production",
+  mode:mode,
+  devtool:"inline-cheap-source-map",
   optimization:{
     minimize:false,
     splitChunks:{
@@ -34,6 +46,11 @@ webpack({
   },
   plugins:[
     new HTMLWebpackPlugin(),
+    new ExtractTextPlugin({
+      filename: "styles.css",
+      allChunks: true,
+      disable: mode === "development"
+    }),
   ]
 }, function(err, stats){
   if(err){
@@ -43,7 +60,8 @@ webpack({
 
   console.log(stats.toString({
     colors:true,
-    chunks:false,
+    modules:false,
+    children: false,
   }));
 
 })
